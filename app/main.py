@@ -1,1 +1,3 @@
-print("this line is toooooooooooooooooooooooooooooooooooooooooooooooo long")
+print(
+    "this line is toooooooooooooooooooooooooooooooooooooooooooooooooooooo long"
+)
