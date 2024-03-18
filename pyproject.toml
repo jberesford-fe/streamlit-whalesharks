@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "streamlit-whalesharks"
+version = "0.1.0"
+description = "streamlit dashboard for whalesharks"
+authors = ["b-justin <justin.beresford@deliveroo.co.uk>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+pandas = "^2.2.1"
+streamlit = "^1.32.0"
+matplotlib = "^3.8.3"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
