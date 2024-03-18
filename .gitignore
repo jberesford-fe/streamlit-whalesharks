@@ -1,0 +1,3 @@
+# gitignore to ignore .streamlit/secrets.toml
+.streamlit/secrets.toml
+```
