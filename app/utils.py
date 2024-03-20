@@ -49,11 +49,14 @@ def import_data_from_api():
 
     url = base_url + f"/{form_id}/data.json"
 
-    username = "madawhale"
-    password = "Wh6l3Sh6rk"
+    # get username from .streamlit/secrets.toml
+    st.session_state["username"] = st.secrets["kobo"]["username"]
+    st.session_state["password"] = st.secrets["kobo"]["password"]
 
     # Call the API and parse JSON
-    response = requests.get(url, auth=(username, password))
+    response = requests.get(
+        url, auth=(st.session_state["username"], st.session_state["password"])
+    )
     data = json.loads(response.text)
     results = data["results"]
 
@@ -61,7 +64,7 @@ def import_data_from_api():
 
 
 def import_tablet_ids_from_csv():
-    return pd.read_csv("../data/tablet_ids.csv")
+    return pd.read_csv("data/tablet_ids.csv")
 
 
 def convert_json_to_dataframe(results, tablet_ids):
@@ -84,4 +87,60 @@ def convert_json_to_dataframe(results, tablet_ids):
     )
     all_sightings = pd.concat([df_exploded, df_sightings], axis=1)
 
+    all_sightings.columns = all_sightings.columns.str.replace(
+        "sighting_repeat/", "", regex=True
+    )
+
+    all_sightings = all_sightings.rename(columns={"shark_uuid": "sighting_id"})
+    all_sightings["sighting_id"] = (
+        all_sightings["sighting_id"]
+        .str.replace("uuid:", "", regex=False)
+        .str[:13]
+    )
+    numbers = [
+        "meteo",
+        "sst",
+        "sea_state",
+        "trichodesmium_pct",
+    ]
+    for col in numbers:
+        if col in all_sightings.columns:
+            all_sightings[col] = pd.to_numeric(
+                all_sightings[col], errors="coerce"
+            )
+
+    if "start" in all_sightings.columns:
+        all_sightings["start"] = pd.to_datetime(all_sightings["start"])
+
+    all_sightings.rename(
+        columns={"_id": "trip_id", "shark_uuid": "sighting_id"}, inplace=True
+    )
+
+    # remove "uuid:" from sighting_id
+    all_sightings["sighting_id"] = all_sightings[
+        "sighting_id"
+    ].str.removeprefix("uuid:")
+
+    all_sightings["megaf_id"] = all_sightings["megaf_id"].str.removeprefix(
+        "uuid:"
+    )
+
     return all_sightings
+
+
+def split_sightings_shark_megaf(all_sightings):
+    """_summary_
+
+    Args:
+        all_sightings (_type_): _description_
+    """
+    # Split the data into two dataframes
+    shark_sightings = all_sightings[
+        (all_sightings["megaf_or_shark"].isin(["shark", "chasse"]))
+        & all_sightings["sighting_id"].notna()
+    ]
+
+    # Filter for megafauna sightings where 'megaf_or_shark' is "megaf"
+    megaf_sightings = all_sightings[all_sightings["megaf_or_shark"] == "megaf"]
+
+    return shark_sightings, megaf_sightings
