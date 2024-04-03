@@ -1,0 +1,21 @@
+# Streamlit config.toml
+
+[theme]
+base="light"
+primaryColor="#f4f4f4"
+backgroundColor="#333"
+secondaryBackgroundColor="181F2A"
+textColor="f4f4f4"
+
+# Font family for all text in the app, except code blocks.
+font="sans serif"
+
+[browser]
+# Window title
+title="My Cool Streamlit App"
+
+# Display the Streamlit footer
+showFooter=false
+
+# Caching options to improve performance
+caching="on"

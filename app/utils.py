@@ -112,6 +112,14 @@ def convert_json_to_dataframe(results, tablet_ids):
     if "start" in all_sightings.columns:
         all_sightings["start"] = pd.to_datetime(all_sightings["start"])
 
+    dates = ["survey_start", "survey_end", "start", "end"]
+    for col in dates:
+        if col in all_sightings.columns:
+            # Convert to datetime, coercing errors to NaT
+            all_sightings[col] = pd.to_datetime(
+                all_sightings[col], errors="coerce"
+            )
+
     all_sightings.rename(
         columns={"_id": "trip_id", "shark_uuid": "sighting_id"}, inplace=True
     )
@@ -144,3 +152,24 @@ def split_sightings_shark_megaf(all_sightings):
     megaf_sightings = all_sightings[all_sightings["megaf_or_shark"] == "megaf"]
 
     return shark_sightings, megaf_sightings
+
+
+def filter_df_on_dates(df, start_date, end_date):
+    """_summary_
+
+    Args:
+        df (_type_): _description_
+        start_date (_type_): _description_
+        end_date (_type_): _description_
+    """
+    # df_no_nan = df[~df.survey_start.isna()]
+
+    df["survey_start"] = pd.to_datetime(df.survey_start, utc=True)
+
+    df["survey_start"] = df["survey_start"].dt.date
+
+    df_filtered_dates = df[
+        (df["survey_start"] >= start_date) & (df["survey_start"] <= end_date)
+    ]
+
+    return df_filtered_dates
