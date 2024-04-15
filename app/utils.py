@@ -3,6 +3,7 @@ import hmac
 import requests
 import json
 import pandas as pd
+import numpy as np
 import boto3
 from io import BytesIO
 
@@ -285,13 +286,146 @@ def process_classifier_form_and_push_S3(
         }
     )
     existing_mapping = get_file_from_s3(
-        bucket_name="mada-whales-python", object_key="files/mapping.parquet"
+        bucket_name,
+        object_key,
     )
     combined_map = pd.concat([existing_mapping, new_row], ignore_index=True)
+
     push_df_to_s3(
         bucket_name,
         object_key,
         dataframe=combined_map,
     )
     st.session_state["i3s_id"] = ""
+
     return combined_map
+
+
+# Classified sightings page
+
+
+def mapUpdateClassified(shark_sightings, mapping):
+    result = pd.merge(shark_sightings, mapping, on="sighting_id", how="outer")
+    result = result[result["i3s_id"].str.match(r"^MD-\d{3}") is True]
+    result["survey_start"] = pd.to_datetime(result["survey_start"])
+    result["survey_start"] = result["survey_start"].dt.date
+
+    result = result[
+        [
+            "sighting_id",
+            "i3s_id",
+            "survey_start",
+            "tablet_name",
+            "observer",
+            "operator",
+            "trip_id",
+            "sighting_number",
+            "sex",
+            "size",
+            "scars",
+            "biopsy",
+            "biopsy_number",
+            "tag",
+            "tag_no",
+        ]
+    ]
+
+    return result
+
+
+# Unique shark sightings page
+def mapUpdateKnownSharks(shark_sightings, mapping):
+    mapping_filtered = mapping[
+        ~mapping["no_id_reason"].isin(["advice_needed", "unusable_sighting"])
+    ]
+
+    merged_data = pd.merge(
+        shark_sightings, mapping_filtered, on="sighting_id", how="outer"
+    )
+    merged_data = merged_data[
+        merged_data["i3s_id"].str.match(r"^MD-\d{3}") is True
+    ]
+    merged_data["survey_start"] = pd.to_datetime(merged_data["survey_start"])
+    merged_data["survey_start"] = merged_data["survey_start"].dt.date
+
+    merged_data["size"] = pd.to_numeric(
+        merged_data["size"], errors="coerce"
+    ).round(2)
+
+    merged_data["survey_start"] = pd.to_datetime(merged_data["survey_start"])
+
+    grouped = (
+        merged_data.groupby("i3s_id")
+        .agg(
+            {
+                "size": lambda x: round(np.nanmean(x), 2),
+                "sex": lambda x: (
+                    pd.Series.mode(x.dropna())[0]
+                    if not pd.Series.mode(x.dropna()).empty
+                    else "Undetermined"
+                ),
+                "scars": lambda x: "yes" if "yes" in x.values else "no",
+                "left_id": lambda x: "yes" if "yes" in x.values else "no",
+                "right_id": lambda x: "yes" if "yes" in x.values else "no",
+                "tag": lambda x: np.sum(x == "yes"),
+                "drone": lambda x: np.sum(x == "yes"),
+                "prey": lambda x: np.sum(x == "yes"),
+                "survey_start": ["min", "count"],
+            }
+        )
+        .reset_index()
+    )
+    grouped.columns = [
+        " ".join(col).strip() if isinstance(col, tuple) else col
+        for col in grouped.columns
+    ]
+
+    column_renames = {
+        "i3s_id": "I3S ID",
+        "size <lambda>": "Size (mean)",
+        "survey_start min": "First sighting",
+        "survey_start count": "Total sightings",
+        "sex <lambda>": "Sex (mode)",
+        "scars <lambda>": "Identified scars",
+        "left_id <lambda>": "Left ID",
+        "right_id <lambda>": "Right ID",
+        "tag <lambda>": "Tag count",
+        "drone <lambda>": "Drone measurements",
+        "prey <lambda>": "Prey samples",
+    }
+    grouped = grouped.rename(columns=column_renames)
+    grouped["First sighting"] = grouped["First sighting"].dt.date
+
+    return grouped
+
+
+# Summary statistics
+def get_summary_stats(df):
+    # Add a constant column 'Year' with value 'All Years'
+    df["Year"] = "All Years"
+
+    summary_stats = df.groupby("Year").agg(
+        **{
+            "Total sightings": ("Total sightings", np.sum),
+            "Unique sightings": ("I3S ID", "count"),
+            "Sightings per shark": ("Total sightings", np.mean),
+            "Average size": ("Size (mean)", lambda x: x.mean()),
+            "male_count": (
+                "Sex (mode)",
+                lambda x: (x == "male").sum(skipna=True),
+            ),
+            "female_count": (
+                "Sex (mode)",
+                lambda x: (x == "female").sum(skipna=True),
+            ),
+        }
+    )
+
+    summary_stats["Male % of total"] = 100 * (
+        summary_stats.male_count
+        / (summary_stats.female_count + summary_stats.male_count)
+    )
+
+    summary_stats.drop(columns=["male_count", "female_count"], inplace=True)
+
+    return summary_stats

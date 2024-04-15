@@ -9,6 +9,8 @@ from utils import (
     push_df_to_s3,
 )
 
+st.set_page_config(layout="wide")
+
 
 def main():
     if not check_password():
