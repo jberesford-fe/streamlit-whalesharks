@@ -12,6 +12,7 @@ streamlit = "^1.32.0"
 matplotlib = "^3.8.3"
 requests = "^2.31.0"
 datetime = "^5.4"
+boto3 = "^1.34.84"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.3"

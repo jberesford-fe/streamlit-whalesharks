@@ -3,8 +3,11 @@ import hmac
 import requests
 import json
 import pandas as pd
+import boto3
+from io import BytesIO
 
 
+# Password checking
 def check_password():
     """Returns `True` if the user had a correct password."""
 
@@ -42,18 +45,16 @@ def check_password():
     return False
 
 
+# Raw data import
 def import_data_from_api():
-
     base_url = "https://kf.kobotoolbox.org/api/v2/assets"
     form_id = "aJ5NwkApvziLAUE7i9eHcn"
 
     url = base_url + f"/{form_id}/data.json"
 
-    # get username from .streamlit/secrets.toml
     st.session_state["username"] = st.secrets["kobo"]["username"]
     st.session_state["password"] = st.secrets["kobo"]["password"]
 
-    # Call the API and parse JSON
     response = requests.get(
         url, auth=(st.session_state["username"], st.session_state["password"])
     )
@@ -124,7 +125,6 @@ def convert_json_to_dataframe(results, tablet_ids):
         columns={"_id": "trip_id", "shark_uuid": "sighting_id"}, inplace=True
     )
 
-    # remove "uuid:" from sighting_id
     all_sightings["sighting_id"] = all_sightings[
         "sighting_id"
     ].str.removeprefix("uuid:")
@@ -173,3 +173,30 @@ def filter_df_on_dates(df, start_date, end_date):
     ]
 
     return df_filtered_dates
+
+
+# Classifier form
+def get_file_from_s3(bucket_name, object_key):
+    """Get file from S3
+
+    Args:
+        bucket_name (str): login to aws console
+        object_key (str): associated with IAM user role called streamlit-access
+
+    Returns:
+        df: file from S3
+    """
+    s3_resource = boto3.resource(
+        "s3",
+        region_name=st.secrets["aws"]["AWS_DEFAULT_REGION"],
+        aws_access_key_id=st.secrets["aws"]["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"],
+    )
+    s3_mapping_file = s3_resource.Object(bucket_name, object_key)
+
+    buffer = BytesIO()
+    s3_mapping_file.download_fileobj(buffer)
+    buffer.seek(0)
+    map = pd.read_parquet(buffer)
+
+    return map

@@ -25,7 +25,7 @@ st.write(
     Here you can share information about your app or project."""
 )
 
-one_year_ago = datetime.now() - timedelta(days=90)
+one_year_ago = datetime.now() - timedelta(days=365)
 start_date = st.date_input("Start date", value=one_year_ago)
 end_date = st.date_input("End date", value="today", min_value=start_date)
 
