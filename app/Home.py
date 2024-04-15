@@ -2,11 +2,15 @@ import streamlit as st
 
 from utils import (
     check_password,
+    import_data_from_api,
+    import_tablet_ids_from_csv,
+    convert_json_to_dataframe,
+    split_sightings_shark_megaf,
+    push_df_to_s3,
 )
 
 
 def main():
-
     if not check_password():
         st.stop()  # Do not continue if check_password is not True.
 
@@ -27,6 +31,21 @@ def main():
     """
 
     st.markdown(html_content, unsafe_allow_html=True)
+
+    # Get data #
+
+    results = import_data_from_api()
+    tablet_ids = import_tablet_ids_from_csv()
+    all_sightings = convert_json_to_dataframe(results, tablet_ids)
+    shark_sightings, megaf_sightings = split_sightings_shark_megaf(
+        all_sightings
+    )
+    push_df_to_s3(
+        "mada-whales-python", "sharks/sightings.parquet", shark_sightings
+    )
+    push_df_to_s3(
+        "mada-whales-python", "megaf/sightings.parquet", megaf_sightings
+    )
 
 
 if __name__ == "__main__":

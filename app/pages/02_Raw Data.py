@@ -2,21 +2,18 @@ import streamlit as st
 from datetime import datetime, timedelta
 
 from utils import (
-    import_data_from_api,
-    import_tablet_ids_from_csv,
-    convert_json_to_dataframe,
-    split_sightings_shark_megaf,
+    get_file_from_s3,
     filter_df_on_dates,
 )
 
 # Get data #
-results = import_data_from_api()
+shark_sightings = get_file_from_s3(
+    bucket_name="mada-whales-python", object_key="sharks/sightings.parquet"
+)
 
-tablet_ids = import_tablet_ids_from_csv()
-
-all_sightings = convert_json_to_dataframe(results, tablet_ids)
-
-shark_sightings, megaf_sightings = split_sightings_shark_megaf(all_sightings)
+megaf_sightings = get_file_from_s3(
+    bucket_name="mada-whales-python", object_key="megaf/sightings.parquet"
+)
 
 
 st.title("About Page")

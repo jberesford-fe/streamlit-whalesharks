@@ -175,7 +175,7 @@ def filter_df_on_dates(df, start_date, end_date):
     return df_filtered_dates
 
 
-# Classifier form
+# Amazon s3 interactions
 def get_file_from_s3(bucket_name, object_key):
     """Get file from S3
 
@@ -192,11 +192,106 @@ def get_file_from_s3(bucket_name, object_key):
         aws_access_key_id=st.secrets["aws"]["AWS_ACCESS_KEY_ID"],
         aws_secret_access_key=st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"],
     )
-    s3_mapping_file = s3_resource.Object(bucket_name, object_key)
+    s3_object = s3_resource.Object(bucket_name, object_key)
 
     buffer = BytesIO()
-    s3_mapping_file.download_fileobj(buffer)
+    s3_object.download_fileobj(buffer)
     buffer.seek(0)
     map = pd.read_parquet(buffer)
 
     return map
+
+
+def push_df_to_s3(bucket_name, object_key, dataframe):
+    """Push dataframe to S3
+
+    Args:
+        bucket_name (str): mada-whales-python
+        object_key (str): folder / file_name.parquet
+        dataframe (df): any dataframe, it will get converted to parquet
+
+    Returns:
+        _type_: _description_
+    """
+    s3_resource = boto3.resource(
+        "s3",
+        region_name=st.secrets["aws"]["AWS_DEFAULT_REGION"],
+        aws_access_key_id=st.secrets["aws"]["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"],
+    )
+
+    parquet_buffer = BytesIO()
+    dataframe.to_parquet(parquet_buffer, index=False)
+
+    s3_object = s3_resource.Object(bucket_name, object_key)
+    s3_object.put(Body=parquet_buffer.getvalue())
+
+    print(
+        f"""{dataframe} pushed to S3 bucket
+            {bucket_name} with key
+            {object_key}"""
+    )
+
+
+def map_un_classified_sharks(shark_sightings, mapping_file):
+    """
+    Args:
+        shark_sightings (df): dataframe pulled from s3
+        mapping_file (_type_): dataframe pulled from s3
+
+    Returns:
+        df: all sharks for which we have not yet assigned an I³S ID
+    """
+    uc = pd.merge(shark_sightings, mapping_file, on="sighting_id", how="outer")
+
+    uc = uc[uc["left_id"] == "yes"]
+    uc["t"] = uc.groupby("sighting_id")["sighting_id"].transform("size")
+    uc = uc[uc["t"] == 1]
+    uc = uc[uc["i3s_id"].isna() | (uc["i3s_id"] == "")]
+    uc = uc[~uc["no_id_reason"].isin(["unusable_sighting"])]
+    uc["date"] = pd.to_datetime(uc["survey_start"])
+    uc["date"] = uc["date"].dt.date
+
+    uc = uc[
+        [
+            "sighting_id",
+            "date",
+            "tablet_name",
+            "observer",
+            "operator",
+            "trip_id",
+            "sighting_number",
+            "sex",
+            "size",
+            "scars",
+            "shark_name_known",
+            "no_id_reason",
+            "surrounding_objects",
+        ]
+    ]
+    uc = uc.rename(columns={"surrounding_objects": "notes"})
+
+    return uc
+
+
+def process_classifier_form_and_push_S3(
+    sighting_id, i3s_id, no_id_reason, bucket_name, object_key
+):
+    new_row = pd.DataFrame(
+        {
+            "sighting_id": [sighting_id],
+            "i3s_id": [i3s_id],
+            "no_id_reason": [no_id_reason],
+        }
+    )
+    existing_mapping = get_file_from_s3(
+        bucket_name="mada-whales-python", object_key="files/mapping.parquet"
+    )
+    combined_map = pd.concat([existing_mapping, new_row], ignore_index=True)
+    push_df_to_s3(
+        bucket_name,
+        object_key,
+        dataframe=combined_map,
+    )
+    st.session_state["i3s_id"] = ""
+    return combined_map
