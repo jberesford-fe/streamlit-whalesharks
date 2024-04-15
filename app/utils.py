@@ -4,8 +4,8 @@ import requests
 import json
 import pandas as pd
 import numpy as np
-import boto3
 from io import BytesIO
+import boto3
 
 
 # Password checking
