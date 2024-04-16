@@ -306,7 +306,8 @@ def process_classifier_form_and_push_S3(
 
 def mapUpdateClassified(shark_sightings, mapping):
     result = pd.merge(shark_sightings, mapping, on="sighting_id", how="outer")
-    result = result[result["i3s_id"].str.match(r"^MD-\d{3}") is True]
+    mask = result["i3s_id"].str.match(r"^MD-\d{3}").fillna(False)
+    result = result[mask]
     result["survey_start"] = pd.to_datetime(result["survey_start"])
     result["survey_start"] = result["survey_start"].dt.date
 
@@ -342,9 +343,8 @@ def mapUpdateKnownSharks(shark_sightings, mapping):
     merged_data = pd.merge(
         shark_sightings, mapping_filtered, on="sighting_id", how="outer"
     )
-    merged_data = merged_data[
-        merged_data["i3s_id"].str.match(r"^MD-\d{3}") is True
-    ]
+    mask = merged_data["i3s_id"].str.match(r"^MD-\d{3}").fillna(False)
+    merged_data = merged_data[mask]
     merged_data["survey_start"] = pd.to_datetime(merged_data["survey_start"])
     merged_data["survey_start"] = merged_data["survey_start"].dt.date
 
