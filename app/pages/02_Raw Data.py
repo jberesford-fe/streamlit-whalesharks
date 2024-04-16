@@ -4,7 +4,12 @@ from datetime import datetime, timedelta
 from utils import (
     get_file_from_s3,
     filter_df_on_dates,
+    check_password,
 )
+
+if not check_password():
+    st.stop()  # Do not continue if check_password is not True.
+
 
 st.set_page_config(layout="wide")
 

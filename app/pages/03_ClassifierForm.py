@@ -4,7 +4,12 @@ from utils import (
     get_file_from_s3,
     map_un_classified_sharks,
     process_classifier_form_and_push_S3,
+    check_password,
 )
+
+if not check_password():
+    st.stop()  # Do not continue if check_password is not True.
+
 
 st.set_page_config(layout="wide")
 

@@ -1,5 +1,14 @@
 import streamlit as st
-from utils import get_file_from_s3, get_summary_stats, mapUpdateKnownSharks
+from utils import (
+    get_file_from_s3,
+    get_summary_stats,
+    mapUpdateKnownSharks,
+    check_password,
+)
+
+if not check_password():
+    st.stop()  # Do not continue if check_password is not True.
+
 
 st.title("Summary Statistics")
 

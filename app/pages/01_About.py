@@ -1,4 +1,9 @@
 import streamlit as st
+from utils import check_password
+
+if not check_password():
+    st.stop()  # Do not continue if check_password is not True.
+
 
 st.markdown("<h3>How to use this dashboard</h3>", unsafe_allow_html=True)
 html_instructions = """
