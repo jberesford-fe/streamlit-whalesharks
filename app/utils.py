@@ -337,7 +337,7 @@ def mapUpdateClassified(shark_sightings, mapping):
 def mapUpdateUnClassified(shark_sightings, mapping):
     result = pd.merge(shark_sightings, mapping, on="sighting_id", how="outer")
     
-    result = result[result.i3s_id.isna()]
+    result = result[~result['i3s_id'].str.match(r"MD-\d{3}$", na=False)]
 
     result = result[
         [
