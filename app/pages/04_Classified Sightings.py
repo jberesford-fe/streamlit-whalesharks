@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from utils import (
     get_file_from_s3,
     mapUpdateClassified,
+    mapUpdateUnClassified,
     filter_df_on_dates,
     check_password,
 )
@@ -39,7 +40,7 @@ end_date = st.date_input("End date", value="today", min_value=start_date)
 if form_selection == "Classified sightings":
     df = mapUpdateClassified(shark_sightings, mapping_file)
 elif form_selection == "Unusable sightings":
-    st.write("Unusable sightings")
+    df = mapUpdateUnClassified(shark_sightings, mapping_file)
 else:
     st.write("No data available")
 

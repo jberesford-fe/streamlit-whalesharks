@@ -303,7 +303,6 @@ def process_classifier_form_and_push_S3(
 
 # Classified sightings page
 
-
 def mapUpdateClassified(shark_sightings, mapping):
     result = pd.merge(shark_sightings, mapping, on="sighting_id", how="outer")
     mask = result["i3s_id"].str.match(r"^MD-\d{3}").fillna(False)
@@ -315,6 +314,35 @@ def mapUpdateClassified(shark_sightings, mapping):
         [
             "sighting_id",
             "i3s_id",
+            "survey_start",
+            "tablet_name",
+            "observer",
+            "operator",
+            "trip_id",
+            "sighting_number",
+            "sex",
+            "size",
+            "scars",
+            "biopsy",
+            "biopsy_number",
+            "tag",
+            "tag_no",
+        ]
+    ]
+
+    return result
+
+# Unclassified sightings page
+
+def mapUpdateUnClassified(shark_sightings, mapping):
+    result = pd.merge(shark_sightings, mapping, on="sighting_id", how="outer")
+    
+    result = result[result.i3s_id.isna()]
+
+    result = result[
+        [
+            "sighting_id",
+            "left_id",
             "survey_start",
             "tablet_name",
             "observer",
