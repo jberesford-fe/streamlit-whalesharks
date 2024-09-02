@@ -27,11 +27,11 @@ COPY . /app
 # Copy the .streamlit directory and the secrets.toml file
 COPY .streamlit/ /app/.streamlit/
 
-# Make port 8502 available to the world outside this container
-EXPOSE 8502
+# Make port 8501 available to the world outside this container
+EXPOSE 8501
 
 # Define environment variable
 ENV NAME World
 
 # Run app.py when the container launches
-CMD ["streamlit", "run", "app/Home.py", "--server.port=8502", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app/Home.py", "--server.port=8501", "--server.address=0.0.0.0"]

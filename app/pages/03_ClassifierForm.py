@@ -75,7 +75,8 @@ with col1:
             and i3s_id == ""
         ):
             error_message = "No I3S ID is given but sighting filed as done."
-        elif not re.match(r"MD-\d{3}$", i3s_id):
+        elif (no_id_reason not in ["advice_needed", "unusable_sighting"] 
+              and not re.match(r"MD-\d{3}$", i3s_id)):
             error_message = "I3S ID must be of the format MD-123."
 
         if error_message:
