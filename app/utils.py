@@ -301,7 +301,32 @@ def process_classifier_form_and_push_S3(
     return combined_map
 
 
+def process_classifier_form_and_delete_from_S3(
+    sighting_id, bucket_name, object_key
+):
+    # Fetch the existing data from S3
+    existing_mapping = get_file_from_s3(
+        bucket_name,
+        object_key,
+    )
+
+    # Remove the row where sighting_id matches
+    updated_map = existing_mapping[
+        existing_mapping["sighting_id"] != sighting_id
+    ]
+
+    # Push the updated DataFrame back to S3
+    push_df_to_s3(
+        bucket_name,
+        object_key,
+        dataframe=updated_map,
+    )
+
+    return updated_map
+
+
 # Classified sightings page
+
 
 def mapUpdateClassified(shark_sightings, mapping):
     result = pd.merge(shark_sightings, mapping, on="sighting_id", how="outer")
@@ -332,12 +357,14 @@ def mapUpdateClassified(shark_sightings, mapping):
 
     return result
 
+
 # Unclassified sightings page
+
 
 def mapUpdateUnClassified(shark_sightings, mapping):
     result = pd.merge(shark_sightings, mapping, on="sighting_id", how="outer")
-    
-    result = result[~result['i3s_id'].str.match(r"MD-\d{3}$", na=False)]
+
+    result = result[~result["i3s_id"].str.match(r"MD-\d{3}$", na=False)]
 
     result = result[
         [
