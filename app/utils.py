@@ -122,6 +122,10 @@ def convert_json_to_dataframe(results, tablet_ids):
                 all_sightings[col], errors="coerce"
             )
 
+    all_sightings["survey_start"] = all_sightings["survey_start"].fillna(
+        all_sightings["start"]
+    )
+
     all_sightings.rename(
         columns={"_id": "trip_id", "shark_uuid": "sighting_id"}, inplace=True
     )
