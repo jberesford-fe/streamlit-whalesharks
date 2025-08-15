@@ -1,12 +1,11 @@
 import streamlit as st
-
 from utils import (
     check_password,
+    convert_json_to_dataframe,
     import_data_from_api,
     import_tablet_ids_from_csv,
-    convert_json_to_dataframe,
-    split_sightings_shark_megaf,
     push_df_to_s3,
+    split_sightings_shark_megaf,
 )
 
 st.set_page_config(layout="wide")
@@ -38,7 +37,7 @@ def main():
 
     results = import_data_from_api()
     tablet_ids = import_tablet_ids_from_csv()
-    all_sightings = convert_json_to_dataframe(results, tablet_ids)
+    all_sightings, trips = convert_json_to_dataframe(results, tablet_ids)
     shark_sightings, megaf_sightings = split_sightings_shark_megaf(
         all_sightings
     )
@@ -48,6 +47,7 @@ def main():
     push_df_to_s3(
         "mada-whales-python", "megaf/sightings.parquet", megaf_sightings
     )
+    push_df_to_s3("mada-whales-python", "sharks/trips.parquet", trips)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,12 @@
-import streamlit as st
 import hmac
-import requests
 import json
-import pandas as pd
-import numpy as np
 from io import BytesIO
+
 import boto3
+import numpy as np
+import pandas as pd
+import requests
+import streamlit as st
 
 
 # Password checking
@@ -138,7 +139,7 @@ def convert_json_to_dataframe(results, tablet_ids):
         "uuid:"
     )
 
-    return all_sightings
+    return all_sightings, df
 
 
 def split_sightings_shark_megaf(all_sightings):

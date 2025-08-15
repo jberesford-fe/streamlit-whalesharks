@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "streamlit-whalesharks"
 version = "0.1.0"
+package-mode = false
 description = "streamlit dashboard for whalesharks"
 authors = ["b-justin <justin.beresford@deliveroo.co.uk>"]
 readme = "README.md"
